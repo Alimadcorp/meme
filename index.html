@@ -4,10 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Meme of the Day by Alimad Co</title>
-    <meta property="og:title" content="Meme of the day">
-    <meta property="og:description" content="by Alimad Co">
     <meta property="og:image" content="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcROjfDTghEmMns99jBtOkpQrfBN19Xfw4W2Kg&s">
-    <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcROjfDTghEmMns99jBtOkpQrfBN19Xfw4W2Kg&s">
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
       import {
@@ -205,13 +202,25 @@
       function hideLoader() {
         document.getElementById("loading-indicator").style.display = "none";
       }
-
+      function getRandomSubreddit() {
+  const subreddits = [
+    "4chan", "greentext", "shitposting", "196", "blursedimages", "comedyhomicide", 
+    "holesome", "TrueReddit", "", "ihaveihaveihavereddit", 
+    "Animemes", "anime_irl", "animenocontext", "goodanimemes", "goodanimememes", 
+    "absolutelynotanimeirl", "HistoryAnimemes", "ShitPostCrusaders", 
+    "Angryupvote", "artmemes", "cursedcomments", "depression_memes", 
+    "linuxmemes", "ProgrammerHumor", "maybemaybemaybe", "MEOW_IRL", 
+    "PrequelMemes", "SequelMemes", "SesameStreetMemes", "TheRealJoke", 
+    "Unexpected", "YouSeeComrade"
+  ];
+  return subreddits[Math.floor(Math.random() * subreddits.length)];
+ }      
       function loadNewMeme() {
         const mainImg = document.getElementById("imag");
         const previewImg = document.getElementById("preview");
         mainImg.style.display = previewImg.style.display = "none";
         document.getElementById("loading-indicator").style.display = "inline";
-        fetch("https://meme-api.com/gimme")
+        fetch("https://meme-api.com/gimme" + getRandomSubreddit())
           .then((res) => res.json())
           .then((data) => {
             displayMeme(data);
