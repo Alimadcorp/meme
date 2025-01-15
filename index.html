@@ -220,7 +220,7 @@
         const previewImg = document.getElementById("preview");
         mainImg.style.display = previewImg.style.display = "none";
         document.getElementById("loading-indicator").style.display = "inline";
-        fetch("https://meme-api.com/gimme" + getRandomSubreddit())
+        fetch("https://meme-api.com/gimme/" + getRandomSubreddit())
           .then((res) => res.json())
           .then((data) => {
             displayMeme(data);
