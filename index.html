@@ -262,7 +262,7 @@ const firebaseConfig = {
         document.getElementById("link").innerHTML = "View Post";
         document.getElementById("link").href = data.postLink;
       }
-      window.onload = fetchMeme;
+      window.addEventListener("online", () => { fetchMeme(); } );
       document.getElementById("butt").addEventListener("click", () => {loadNewMeme();});
     </script>
     <style>
