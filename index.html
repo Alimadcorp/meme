@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Meme of the Day by Alimad Co</title>
-    <meta property="og:image" content="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcROjfDTghEmMns99jBtOkpQrfBN19Xfw4W2Kg&s">
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
       import {
@@ -19,16 +18,15 @@
         serverTimestamp,
       } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyBR1UeKEAJV4x3YOjzMFDsaSUwQiLgJNFQ",
-        authDomain: "commentspagetests.firebaseapp.com",
-        projectId: "commentspagetests",
-        storageBucket: "commentspagetests.firebasestorage.app",
-        messagingSenderId: "560501874254",
-        appId: "1:560501874254:web:2cab2358cb517c3418ad1f",
-        measurementId: "G-HYDSZ89BLH",
-      };
-
+const firebaseConfig = {
+  apiKey: "AIzaSyA-oL_zrZfhbpnhiMT3Ro_zNFdGkDKL45E",
+  authDomain: "alimadmemeoftheday.firebaseapp.com",
+  projectId: "alimadmemeoftheday",
+  storageBucket: "alimadmemeoftheday.firebasestorage.app",
+  messagingSenderId: "428533524203",
+  appId: "1:428533524203:web:3ea2ee763fd1ea335e40ae",
+  measurementId: "G-RQGCWYRTB7"
+};
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       const appname = "meme";
@@ -203,23 +201,25 @@
         document.getElementById("loading-indicator").style.display = "none";
       }
       function getRandomSubreddit() {
-  const subreddits = [
-    "4chan", "greentext", "shitposting", "196", "blursedimages", "comedyhomicide", 
-    "holesome", "TrueReddit", "", "ihaveihaveihavereddit", 
-    "Animemes", "anime_irl", "animenocontext", "goodanimemes", "goodanimememes", 
-    "absolutelynotanimeirl", "HistoryAnimemes", "ShitPostCrusaders", 
-    "Angryupvote", "artmemes", "cursedcomments", "depression_memes", 
-    "linuxmemes", "ProgrammerHumor", "maybemaybemaybe", "MEOW_IRL", 
-    "PrequelMemes", "SequelMemes", "SesameStreetMemes", "TheRealJoke", 
-    "Unexpected", "YouSeeComrade"
-  ];
-  return subreddits[Math.floor(Math.random() * subreddits.length)];
- }      
+        const subreddits = [
+          "4chan", "greentext", "shitposting", "196", "blursedimages", "comedyhomicide", 
+          "holesome", "TrueReddit", "memes", "dankmemes", "me_irl", "ihaveihaveihavereddit", 
+          "Animemes", "anime_irl", "animenocontext", "goodanimemes", "goodanimememes", 
+          "absolutelynotanimeirl", "HistoryAnimemes", "ShitPostCrusaders", 
+          "Angryupvote", "artmemes", "cursedcomments", "depression_memes", 
+          "linuxmemes", "ProgrammerHumor", "maybemaybemaybe", "MEOW_IRL", 
+          "PrequelMemes", "SequelMemes", "SesameStreetMemes", "TheRealJoke", 
+          "Unexpected", "YouSeeComrade"
+        ];
+        let r = subreddits[Math.floor(Math.random() * subreddits.length)];
+        console.log(r);
+        return r;
+       }      
       function loadNewMeme() {
         const mainImg = document.getElementById("imag");
         const previewImg = document.getElementById("preview");
         mainImg.style.display = previewImg.style.display = "none";
-        document.getElementById("loading-indicator").style.display = "inline";
+        document.getElementById("loading-indicator").style.display = "flex";
         fetch("https://meme-api.com/gimme/" + getRandomSubreddit())
           .then((res) => res.json())
           .then((data) => {
@@ -262,6 +262,7 @@
         document.getElementById("link").href = data.postLink;
       }
       window.onload = fetchMeme;
+      document.getElementById("butt").addEventListener("click", () => {loadNewMeme(); console.log("butt");});
     </script>
     <style>
           body {
@@ -449,7 +450,7 @@
     <h3 id="author"></h3>
     <h3 id="subreddit"></h3>
     <a href="#" id="link" target="_blank"></a><br /><br />
-
+    <button id="butt">Load New</button>
     <div class="feedback-container">
       <div id="comments-section">
         <div id="comments-list"></div>
