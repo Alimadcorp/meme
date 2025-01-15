@@ -203,16 +203,14 @@ const firebaseConfig = {
       function getRandomSubreddit() {
         const subreddits = [
           "4chan", "greentext", "shitposting", "196", "blursedimages", "comedyhomicide", 
-          "holesome", "TrueReddit", "memes", "dankmemes", "me_irl", "ihaveihaveihavereddit", 
+          "holesome", "memes", "dankmemes", "me_irl", 
           "Animemes", "anime_irl", "animenocontext", "goodanimemes", "goodanimememes", 
           "absolutelynotanimeirl", "HistoryAnimemes", "ShitPostCrusaders", 
           "Angryupvote", "artmemes", "cursedcomments", "depression_memes", 
-          "linuxmemes", "ProgrammerHumor", "maybemaybemaybe", "MEOW_IRL", 
-          "PrequelMemes", "SequelMemes", "SesameStreetMemes", "TheRealJoke", 
-          "Unexpected", "YouSeeComrade"
+          "linuxmemes", "ProgrammerHumor", "MEOW_IRL", 
+          "PrequelMemes", "SequelMemes", "SesameStreetMemes", "TheRealJoke", "YouSeeComrade"
         ];
         let r = subreddits[Math.floor(Math.random() * subreddits.length)];
-        console.log(r);
         return r;
        }      
       function loadNewMeme() {
@@ -234,19 +232,22 @@ const firebaseConfig = {
       }
 
       function displayMeme(data) {
-        hideLoader();
+        document.getElementById("loading-indicator").style.display = "flex";
         const mainImg = document.getElementById("imag");
         const previewImg = document.getElementById("preview");
         previewImg.style.display = "inline";
         previewImg.src = data.preview[1];
+        mainImg.style.display = "none";
         mainImg.src = data.url;
 
         previewImg.onload = () => {
+        document.getElementById("loading-indicator").style.display = "none";
           previewImg.classList.remove("hidden");
           previewImg.style.display = "inline";
         };
 
         mainImg.onload = () => {
+        document.getElementById("loading-indicator").style.display = "none";
           previewImg.classList.add("hidden");
           mainImg.classList.remove("hidden");
           previewImg.style.display = "none";
@@ -262,7 +263,7 @@ const firebaseConfig = {
         document.getElementById("link").href = data.postLink;
       }
       window.onload = fetchMeme;
-      document.getElementById("butt").addEventListener("click", () => {loadNewMeme(); console.log("butt");});
+      document.getElementById("butt").addEventListener("click", () => {loadNewMeme();});
     </script>
     <style>
           body {
@@ -450,7 +451,7 @@ const firebaseConfig = {
     <h3 id="author"></h3>
     <h3 id="subreddit"></h3>
     <a href="#" id="link" target="_blank"></a><br /><br />
-    <button id="butt">Load New</button>
+    <button id="butt" style="display:none;">Load New</button>
     <div class="feedback-container">
       <div id="comments-section">
         <div id="comments-list"></div>
@@ -459,7 +460,7 @@ const firebaseConfig = {
       <form id="feedbackForm">
         <textarea
           id="comment"
-          placeholder="Write your comment here..."
+          placeholder="Suggest a subreddit or give feedback..."
           required
         ></textarea>
       </form>
