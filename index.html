@@ -1,476 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Meme of the Day by Alimad Co</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
-      import {
-        getFirestore,
-        collection,
-        doc,
-        query,
-        orderBy,
-        onSnapshot,
-        addDoc,
-        updateDoc,
-        serverTimestamp,
-      } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyA-oL_zrZfhbpnhiMT3Ro_zNFdGkDKL45E",
-  authDomain: "alimadmemeoftheday.firebaseapp.com",
-  projectId: "alimadmemeoftheday",
-  storageBucket: "alimadmemeoftheday.firebasestorage.app",
-  messagingSenderId: "428533524203",
-  appId: "1:428533524203:web:3ea2ee763fd1ea335e40ae",
-  measurementId: "G-RQGCWYRTB7"
-};
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-      const appname = "meme";
-      const feedbackForm = document.getElementById("feedbackForm");
-      const commentTextarea = document.getElementById("comment");
-      const commentsList = document.getElementById("comments-list");
-      let commentsArray = [];
-      async function addComment(commentText) {
-        try {
-          await addDoc(collection(db, appname), {
-            text: commentText,
-            timestamp: serverTimestamp(),
-          });
-        } catch (error) {
-          console.error("Error adding comment: ", error);
-        }
-      }
-      function fetchComments() {
-        const commentsRef = query(collection(db, appname), orderBy("timestamp"));
-        onSnapshot(commentsRef, (snapshot) => {
-          commentsArray = [];
-          snapshot.forEach((doc) => {
-            const commentData = doc.data();
-            commentData.id = doc.id;
-            commentsArray.push(commentData);
-          });
-          displayCommentsWithDelay(true);
-        });
-      }
-      function formatTimeAgo(timestamp) {
-        const now = new Date();
-
-        const diffInSeconds = Math.floor((now - timestamp) / 1000);
-        if (diffInSeconds < 60) {
-          return diffInSeconds <= 0
-            ? "Just now"
-            : `${diffInSeconds} second${diffInSeconds === 1 ? "" : "s"} ago`;
-        }
-        const diffInMinutes = Math.floor(diffInSeconds / 60);
-        if (diffInMinutes < 60) {
-          return `${diffInMinutes} minute${diffInMinutes === 1 ? "" : "s"} ago`;
-        }
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) {
-          return `${diffInHours} hour${diffInHours === 1 ? "" : "s"} ago`;
-        }
-        const diffInDays = Math.floor(diffInHours / 24);
-        if (diffInDays <= 14) {
-          return `${diffInDays} day${diffInDays === 1 ? "" : "s"} ago`;
-        }
-        return timestamp.toLocaleDateString("en-US", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        });
-      }
-
-      function refreshCom() {
-        let newArray = [];
-        const commentsRef = query(collection(db, appname), orderBy("timestamp"));
-        onSnapshot(commentsRef, (snapshot) => {
-          snapshot.forEach((doc) => {
-            const commentData = doc.data();
-            commentData.id = doc.id;
-            newArray.push(commentData);
-          });
-          if (JSON.stringify(newArray) !== JSON.stringify(commentsArray)) {
-            commentsArray = newArray;
-            displayCommentsWithDelay(false);
-          }
-        });
-      }
-      function forceRefresh() {
-        let newArray = [];
-        const commentsRef = query(collection(db, appname), orderBy("timestamp"));
-        onSnapshot(commentsRef, (snapshot) => {
-          snapshot.forEach((doc) => {
-            const commentData = doc.data();
-            commentData.id = doc.id;
-            newArray.push(commentData);
-          });
-          commentsArray = newArray;
-          displayCommentsWithDelay(false);
-        });
-      }
-      function scrollToBottom() {
-        const commentsContainer = document.getElementById("comments-section");
-        commentsContainer.scrollTop = commentsContainer.scrollHeight;
-      }
-      let adding = false;
-      async function displayCommentsWithDelay(scrolll) {
-        if (adding) return;
-        adding = true;
-        commentsList.innerHTML = "";
-        for (const comment of commentsArray) {
-          if (scrolll) {
-            await new Promise((resolve) => setTimeout(resolve, 10));
-          } // 50ms delay
-          const timestamp = comment.timestamp
-            ? comment.timestamp.toDate()
-            : new Date();
-          const timeAgo = formatTimeAgo(timestamp);
-          const commentElement = document.createElement("div");
-          commentElement.classList.add("comment");
-          commentElement.innerHTML = `
-            <p>${comment.text}</p>
-            <div class="comment-time">${timeAgo}</div>
-          `;
-          commentsList.appendChild(commentElement);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        if (scrolll) scrollToBottom();
-        adding = false;
-      }
-
-      document.getElementById("sub").addEventListener("click", () => {
-        const commentText = commentTextarea.value;
-        if (commentText) {
-          addComment(commentText);
-          commentTextarea.value = "";
-        }
-      });
-      document.addEventListener("DOMContentLoaded", () => {
-        fetchComments();
-        setInterval(refreshCom, 8000);
-        setInterval(forceRefresh, 61234);
-      });
-
-      function fetchMeme() {
-        const commentsRef = query(collection(db, "memeoftheday"));
-        onSnapshot(commentsRef, (snapshot) => {
-          snapshot.forEach((doc) => {
-            const today = new Date().toISOString().split("T")[0];
-            let data = doc.data();
-            if(data.memeby != "Unknown"){
-              document.getElementById("memeby").innerHTML = "Meme updated by " + data.memeby;
-            }else{
-              document.getElementById("memeby").innerHTML = "Loading...";
-            }
-            if (today == data.day) {
-              displayMeme(data);
-            } else {
-              loadNewMeme();
-            }
-          });
-        });
-      }
-      async function uploadMeme(data) {
-        try {
-          const docRef = doc(db, "memeoftheday", "today");
-
-          const filteredData = {
-            title: data.title || "No Title",
-            preview: data.preview || ["No Preview"],
-            subreddit: data.subreddit || "No Subreddit",
-            postLink: data.postLink || "No Link",
-            day: data.day || new Date().toISOString().split("T")[0],
-            author: data.author || "Unknown Author",
-            url: data.url || "No URL",
-            memeby: "Unknown",
-            time: serverTimestamp(),
-          };
-
-          await updateDoc(docRef, filteredData);
-        } catch (error) {
-          console.error("Error updating entry: ", error);
-        }
-      }
-
-
-      function hideLoader() {
-        document.getElementById("loading-indicator").style.display = "none";
-      }
-      function getRandomSubreddit() {
-        const subreddits = [
-          "4chan", "greentext", "shitposting", "196", "blursedimages", "comedyhomicide", 
-          "holesome", "memes", "dankmemes", "me_irl", 
-          "Animemes", "anime_irl", "animenocontext", "goodanimemes", "goodanimememes", 
-          "absolutelynotanimeirl", "HistoryAnimemes", "ShitPostCrusaders", 
-          "Angryupvote", "artmemes", "cursedcomments", "depression_memes", 
-          "linuxmemes", "ProgrammerHumor", "MEOW_IRL", 
-          "PrequelMemes", "SequelMemes", "SesameStreetMemes", "TheRealJoke", "YouSeeComrade"
-        ];
-        let r = subreddits[Math.floor(Math.random() * subreddits.length)];
-        return r;
-       }      
-      function loadNewMeme() {
-        const mainImg = document.getElementById("imag");
-        const previewImg = document.getElementById("preview");
-        mainImg.style.display = previewImg.style.display = "none";
-        document.getElementById("loading-indicator").style.display = "flex";
-        fetch("https://meme-api.com/gimme/" + getRandomSubreddit())
-          .then((res) => res.json())
-          .then((data) => {
-            displayMeme(data);
-            uploadMeme(data);
-          })
-          .catch((err) => {
-            console.error(err);
-            document.getElementById("title").innerHTML = "Failed to load meme.";
-            hideLoader();
-          });
-      }
-
-      function displayMeme(data) {
-        document.getElementById("loading-indicator").style.display = "flex";
-        const mainImg = document.getElementById("imag");
-        const previewImg = document.getElementById("preview");
-        previewImg.style.display = "inline";
-        previewImg.src = data.preview[1];
-        mainImg.style.display = "none";
-        mainImg.src = data.url;
-
-        previewImg.onload = () => {
-        document.getElementById("loading-indicator").style.display = "none";
-          previewImg.classList.remove("hidden");
-          previewImg.style.display = "inline";
-        };
-
-        mainImg.onload = () => {
-        document.getElementById("loading-indicator").style.display = "none";
-          previewImg.classList.add("hidden");
-          mainImg.classList.remove("hidden");
-          previewImg.style.display = "none";
-          mainImg.style.display = "inline";
-          hideLoader();
-        };
-
-        document.getElementById("title").innerHTML = data.title;
-        document.getElementById("author").innerHTML = "Author: " + data.author;
-        document.getElementById("subreddit").innerHTML =
-          "Subreddit: r/" + data.subreddit;
-        document.getElementById("link").innerHTML = "View Post";
-        document.getElementById("link").href = data.postLink;
-      }
-      window.addEventListener("online", () => { fetchMeme(); } );
-      window.onload = fetchMeme;
-      document.getElementById("butt").addEventListener("click", () => {loadNewMeme();});
-    </script>
-    <style>
-          body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-          }
-
-          h1 {
-            margin: 20px 0;
-            color: #bb86fc;
-          }
-
-          img {
-            max-width: 90%;
-            height: auto;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            margin: 20px 0;
-          }
-
-          img.hidden {
-            display: none;
-          }
-
-          a {
-            color: #bb86fc;
-            text-decoration: none;
-          }
-
-          a:hover {
-            text-decoration: underline;
-          }
-
-          button {
-            background-color: #bb86fc;
-            color: #121212;
-            border: none;
-            border-radius: 4px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 20px;
-          }
-
-          button:hover {
-            background-color: #3700b3;
-          }
-
-          #loading-indicator {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-          }
-
-          #loading-indicator span {
-            color: #bb86fc;
-            font-size: 24px;
-            margin-right: 10px;
-          }
-
-          #loading-indicator .spinner {
-            border: 4px solid #121212;
-            border-top: 4px solid #bb86fc;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-          }
-          .feedback-container {
-          position: static; /* Let it flow with the page */
-          margin-top: 1.5rem; /* Space between buttons and comments */
-          background-color: rgba(255, 255, 255, 0.05);
-          padding: 1rem;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-          bottom: 1rem;
-          left: 1rem;
-          right: 1rem;
-          overflow-x: hidden;
-          overflow-y: auto;
-          z-index: 9999;
-          max-height: 90%;
-        }
-
-      textarea {
-        font-size: 1rem;
-      }
-        #sub {
-          margin: 1rem 0; /* Adjust spacing */
-        }
-
-      .feedback-container h1,
-      .feedback-container h2 {
-        color: #eee;
-        text-align: center;
-        font-size: 1rem; /* Increased size for readability */
-      }
-
-      textarea {
-        height: 5rem; /* Adjusted height */
-        padding: 1rem;
-        border-radius: 5px;
-        resize: none;
-        width: 90%;
-      }
-
-      .feedback-container button {
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 1rem;
-        margin-top: 1rem;
-        width: 80%;
-      }
-
-      #comments-section {
-        margin-top: 1.5rem;
-        max-height: 50vh;
-        overflow-y: auto;
-      }
-
-      .comment-time {
-        font-size: 11px;
-        color: #888;
-      }
-      .comment {
-        position: relative;
-        overflow: auto;
-        background-color: #4446;
-        padding: 0.1rem;
-        border-radius: 5px;
-        margin-bottom: 0.1rem;
-        border: 1px solid #888;
-      }
-      #sub {
-        margin: 0.5rem auto; /* Center horizontally */
-        display: block; /* Make it a block element */
-        box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
-        font-size: 13px;
-        width: 80%; /* Adjust width as needed */
-        color: #fff;
-        background-color: #0a0a;
-        padding: 6px;
-        cursor: pointer;
-      }
-      .comment p {
-        margin: 0;
-        font-size: 13px;
-      }
-
-          @keyframes spin {
-            from {
-              transform: rotate(0deg);
-            }
-            to {
-              transform: rotate(360deg);
-            }
-          }
-    </style>
-  </head>
-  <body>
-    <div id="loading-indicator">
-      <span><h6 id="memeby">Loading...</h6></span>
-      <div class="spinner"></div>
-      <br />
-    </div>
-
-    <h1>Meme of the Day</h1>
-    <img src="#" id="preview" alt="Preview" class="hidden" />
-    <img src="#" id="imag" alt="Meme of the day" class="hidden" />
-    <h2 id="title">Loading...</h2>
-    <h3 id="author"></h3>
-    <h3 id="subreddit"></h3>
-    <a href="#" id="link" target="_blank"></a><br /><br />
-    <button id="butt" style="display:none;">Load New</button>
-    <div class="feedback-container">
-      <div id="comments-section">
-        <div id="comments-list"></div>
-      </div>
-      <h1>Leave a Comment</h1>
-      <form id="feedbackForm">
-        <textarea
-          id="comment"
-          placeholder="Suggest a subreddit or give feedback..."
-          required
-        ></textarea>
-      </form>
-      <button id="sub">Submit</button>
-    </div>
-    <p class="footer">
-      Made by<a href="https://alimadcorp.github.io/site/social.html"
-        ><strong>&nbspMuhammad Ali</strong></a
-      >.
-    </p>
-  </body>
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Meme of the Day by Alimad Co</title>
+<link rel=icon href="https://img.itch.zone/aW1nLzE5Mzk1Mzc1LmpwZWc=/original/VkysM2.jpeg">
+<meta property=og:title content="Meme of the Day">
+<meta property=og:type content=website>
+<meta property=og:url content=https://alimadcorp.github.io/meme>
+<meta property=og:image content="https://img.itch.zone/aW1nLzE5Mzk1Mzc1LmpwZWc=/original/VkysM2.jpeg">
+<meta property=og:image:alt content=Preview>
+<meta property=og:description content="by Alimad Co">
+<meta property=og:site_name content="Meme of the Day">
+<meta property=og:locale content=en_US>
+<script type="module">
+  import{initializeApp as e}from"https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";import{getFirestore as t,collection as n,doc as i,query as a,orderBy as m,onSnapshot as o,addDoc as r,setDoc as d,getDoc as s,updateDoc as l,serverTimestamp as c}from"https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js";let firebaseConfig={apiKey:"AIzaSyA-oL_zrZfhbpnhiMT3Ro_zNFdGkDKL45E",authDomain:"alimadmemeoftheday.firebaseapp.com",projectId:"alimadmemeoftheday",storageBucket:"alimadmemeoftheday.firebasestorage.app",messagingSenderId:"428533524203",appId:"1:428533524203:web:3ea2ee763fd1ea335e40ae",measurementId:"G-RQGCWYRTB7"},app=e(firebaseConfig),db=t(app),appname="meme",feedbackForm=document.getElementById("feedbackForm"),commentTextarea=document.getElementById("comment"),commentsList=document.getElementById("comments-list"),commentsArray=[];async function addComment(e){try{await r(n(db,appname),{text:e,timestamp:c()})}catch(t){console.error("Error adding comment: ",t)}}function fetchComments(){let e=a(n(db,appname),m("timestamp"));o(e,e=>{commentsArray=[],e.forEach(e=>{let t=e.data();t.id=e.id,commentsArray.push(t)}),displayCommentsWithDelay(!0)})}function formatTimeAgo(e){let t=new Date,n=Math.floor((t-e)/1e3);if(n<60)return n<=0?"Just now":`${n} second${1===n?"":"s"} ago`;let i=Math.floor(n/60);if(i<60)return`${i} minute${1===i?"":"s"} ago`;let a=Math.floor(i/60);if(a<24)return`${a} hour${1===a?"":"s"} ago`;let m=Math.floor(a/24);return m<=14?`${m} day${1===m?"":"s"} ago`:e.toLocaleDateString("en-US",{day:"2-digit",month:"short",year:"numeric"})}function refreshCom(){let e=[],t=a(n(db,appname),m("timestamp"));o(t,t=>{t.forEach(t=>{let n=t.data();n.id=t.id,e.push(n)}),JSON.stringify(e)!==JSON.stringify(commentsArray)&&(commentsArray=e,displayCommentsWithDelay(!1))})}function forceRefresh(){let e=[],t=a(n(db,appname),m("timestamp"));o(t,t=>{t.forEach(t=>{let n=t.data();n.id=t.id,e.push(n)}),commentsArray=e,displayCommentsWithDelay(!1)})}function scrollToBottom(){let e=document.getElementById("comments-section");e.scrollTop=e.scrollHeight}let adding=!1;async function displayCommentsWithDelay(e){if(!adding){for(let t of(adding=!0,commentsList.innerHTML="",commentsArray)){e&&await new Promise(e=>setTimeout(e,10));let n=t.timestamp?t.timestamp.toDate():new Date,i=formatTimeAgo(n),a=document.createElement("div");a.classList.add("comment"),a.innerHTML=`<p>${t.text}</p>\n<div class="comment-time">${i}</div>\n`,commentsList.appendChild(a)}await new Promise(e=>setTimeout(e,50)),e&&scrollToBottom(),adding=!1}}document.getElementById("sub").addEventListener("click",()=>{let e=commentTextarea.value;e&&(addComment(e),commentTextarea.value="")}),document.addEventListener("DOMContentLoaded",()=>{fetchComments(),setInterval(refreshCom,8e3),setInterval(forceRefresh,61234)});let currday="0000-00-00";async function fetchMeme(){currday=new Date().toISOString().split("T")[0];let e=i(db,"memeoftheday",currday),t=await s(e);if(t.exists()){let n=t.data();"Unknown"!=n.memeby?document.getElementById("memeby").innerHTML="Meme updated by "+n.memeby:document.getElementById("memeby").innerHTML="Loading...",displayMeme(n),loadPreviousMemes()}else loadNewMeme()}async function loadPreviousMemes(){let e=a(n(db,"memeoftheday"),m("day"));o(e,e=>{let t=document.getElementById("previous-memes-list");t.innerHTML="",e.forEach(e=>{let n=e.data(),i=document.createElement("div");i.classList.add("meme-item"),i.innerHTML=`<div class="meme-header">\n<h3>${n.title}</h3>\n<p>${n.day}</p>\n</div>\n<img src="${n.preview[2]}" alt="Preview" class="meme-preview" />\n<p><strong>Author:</strong> ${n.author}</p>\n<p><strong>Subreddit:</strong> r/${n.subreddit}</p>\n<a href="${n.postLink}" target="_blank">View Post</a>\n`,t.appendChild(i)})})}async function uploadMeme(e){try{currday=new Date().toISOString().split("T")[0];let t=i(db,"memeoftheday",currday),n={title:e.title||"No Title",preview:e.preview||["No Preview"],subreddit:e.subreddit||"No Subreddit",postLink:e.postLink||"No Link",day:e.day||new Date().toISOString().split("T")[0],author:e.author||"Unknown Author",url:e.url||"No URL",memeby:"Unknown",time:c()};await d(t,n)}catch(a){console.error("Error updating entry: ",a)}}function hideLoader(){document.getElementById("loading-indicator").style.display="none"}function getRandomSubreddit(){let e=["4chan","greentext","shitposting","196","blursedimages","comedyhomicide","holesome","memes","dankmemes","me_irl","Animemes","anime_irl","animenocontext","goodanimemes","goodanimememes","absolutelynotanimeirl","HistoryAnimemes","ShitPostCrusaders","Angryupvote","artmemes","cursedcomments","depression_memes","linuxmemes","ProgrammerHumor","MEOW_IRL","PrequelMemes","SequelMemes","SesameStreetMemes","TheRealJoke","YouSeeComrade","PhoenixSC","MinecraftMemes",];return e[Math.floor(Math.random()*e.length)]}function loadNewMeme(){let e=document.getElementById("imag"),t=document.getElementById("preview");e.style.display=t.style.display="none",document.getElementById("loading-indicator").style.display="flex",fetch("https://meme-api.com/gimme/"+getRandomSubreddit()).then(e=>e.json()).then(e=>{displayMeme(e),uploadMeme(e)}).catch(e=>{console.error(e),document.getElementById("title").innerHTML="Failed to load meme.",hideLoader()})}function displayMeme(e){localStorage.setItem(currday,JSON.stringify(e)),document.getElementById("loading-indicator").style.display="flex";let t=document.getElementById("imag"),n=document.getElementById("preview");n.style.display="inline",n.src=e.preview[1],t.style.display="none",t.src=e.url,n.onload=()=>{document.getElementById("loading-indicator").style.display="none",n.classList.remove("hidden"),n.style.display="inline"},t.onload=()=>{document.getElementById("loading-indicator").style.display="none",n.classList.add("hidden"),t.classList.remove("hidden"),n.style.display="none",t.style.display="inline",hideLoader()},document.getElementById("title").innerHTML=e.title,document.getElementById("author").innerHTML="Author: "+e.author,document.getElementById("subreddit").innerHTML="Subreddit: r/"+e.subreddit,document.getElementById("link").innerHTML="View Post",document.getElementById("link").href=e.postLink}window.addEventListener("online",()=>{fetchMeme(),loadPreviousMemes()}),window.onload=fetchMeme,document.getElementById("butt").addEventListener("click",()=>{loadNewMeme()});</script><script>
+  let currdayy="0000-00-00";function getMeme(){if(console.log(navigator.onLine),currdayy=new Date().toISOString().split("T")[0],!navigator.onLine){let e=JSON.parse(localStorage.getItem(currdayy));e&&displayMemee(e);return}}function forceGetMeme(){currdayy=new Date().toISOString().split("T")[0];let e=JSON.parse(localStorage.getItem(currdayy));e&&displayMemee(e)}function displayMemee(e){localStorage.setItem(currdayy,JSON.stringify(e)),document.getElementById("loading-indicator").style.display="flex";let t=document.getElementById("imag"),n=document.getElementById("preview");n.style.display="inline",n.src=e.preview[1],t.style.display="none",t.src=e.url,n.onload=()=>{document.getElementById("loading-indicator").style.display="none",n.classList.remove("hidden"),n.style.display="inline"},t.onload=()=>{document.getElementById("loading-indicator").style.display="none",n.classList.add("hidden"),t.classList.remove("hidden"),n.style.display="none",t.style.display="inline",hideLoader()},document.getElementById("title").innerHTML=e.title,document.getElementById("author").innerHTML="Author: "+e.author,document.getElementById("subreddit").innerHTML="Subreddit: r/"+e.subreddit,document.getElementById("link").innerHTML="View Post",document.getElementById("link").href=e.postLink}function checkOnlineStatus(){"none"!=document.getElementById("loading-indicator").style.display&&forceGetMeme()}setInterval(checkOnlineStatus,5e3),document.addEventListener("DOMContentLoaded",()=>{getMeme()});</script><style>
+  h1,img{margin:20px 0}body{background-color:#121212;color:#e0e0e0;font-family:Arial,sans-serif;text-align:center;margin:0;padding:20px}h1{color:#fff}img{max-width:90%;height:auto;border:2px solid #e0e0e0;border-radius:8px}img.hidden{display:none}.meme-item a,a{color:#bb86fc;text-decoration:none}.meme-item a:hover,a:hover{text-decoration:underline}button{background-color:#bb86fc;color:#121212;border:none;border-radius:4px;padding:10px 20px;font-size:16px;cursor:pointer;margin-top:20px}button:hover{background-color:#3700b3}#loading-indicator{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);display:flex;justify-content:center;align-items:center;z-index:1000}#loading-indicator span{color:#bb86fc;font-size:24px;margin-right:10px}#loading-indicator .spinner{border:4px solid #121212;border-top:4px solid #bb86fc;border-radius:50%;width:40px;height:40px;animation:1s linear infinite spin}.feedback-container{position:static;margin-top:1.5rem;background-color:rgba(255,255,255,.05);padding:1rem;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.1);bottom:1rem;left:1rem;right:1rem;overflow-x:hidden;overflow-y:auto;z-index:9999;max-height:90%}textarea{font-size:1rem;height:5rem;padding:1rem;border-radius:5px;resize:none;width:90%}.feedback-container h1,.feedback-container h2{color:#eee;text-align:center;font-size:1rem}#sub,.feedback-container button{width:80%;color:#fff;cursor:pointer}.feedback-container button{background-color:#4caf50;border:none;border-radius:5px;font-size:1rem;margin-top:1rem}#comments-section{margin-top:1.5rem;max-height:50vh;overflow-y:auto}.comment-time{font-size:11px;color:#888}.comment{position:relative;overflow:auto;background-color:#4446;padding:.1rem;border-radius:5px;margin-bottom:.1rem;border:1px solid #888}#sub{margin:.5rem auto;display:block;box-shadow:2px 4px 10px rgba(0,0,0,.2);font-size:13px;background-color:#0a0a;padding:6px}.comment p{margin:0;font-size:13px}.meme-item,.menu-item p{margin:4px 0}@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}#previous-memes-list{margin-top:20px;display:flex;flex-direction:column;align-items:center}.meme-item{background-color:#11002088;padding:10px;border-radius:8px;width:90%;border:1px solid #000;text-align:left}.meme-preview{max-width:100%;border-radius:8px;margin:5px 0;align-content:center}.meme-item a:hover{text-decoration-style:wavy}::-webkit-scrollbar{width:6px;height:5px}::-webkit-scrollbar-track{background:#fff3}::-webkit-scrollbar-thumb{background:#8888;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#5558}
+</style>
+</head>
+<body>
+<div id=loading-indicator>
+<span><h6 id=memeby>Loading...</h6></span>
+<div class=spinner></div>
+<br>
+</div>
+<h1>Meme of the Day</h1>
+<img src=# id=preview alt=Preview class=hidden>
+<img src=# id=imag alt="Meme of the day" class=hidden>
+<h2 id=title>Loading...</h2>
+<h3 id=author></h3>
+<h3 id=subreddit></h3>
+<a href=# id=link target=_blank></a><br><br>
+<button id=butt style=display:none>Load New</button>
+<div class=feedback-container>
+<div id=comments-section>
+<div id=comments-list></div>
+</div>
+<h1>Leave a Comment</h1>
+<form id=feedbackForm>
+<textarea id=comment placeholder="Suggest a subreddit or give feedback..." required></textarea>
+</form>
+<button id=sub>Submit</button>
+</div>
+<details>
+<summary><h3>Show Previous Memes</h3></summary>
+<div id=previous-memes-list>
+</div>
+</details>
+<p class=footer>
+Made by<a href=https://alimadcorp.github.io/site/social.html><strong>&nbspMuhammad Ali</strong></a>.
+</p>
+</body>
 </html>
